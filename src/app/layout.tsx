@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prode Mundial",
-  description: "Prode para el Mundial",
+  title: "Prode Mundial 2026",
+  description: "Prode para el Mundial 2026",
 };
 
 export default function RootLayout({
@@ -27,6 +27,9 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="theme-color" content="#16a34a" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

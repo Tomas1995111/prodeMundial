@@ -2,6 +2,9 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { savePrediction } from '@/app/actions/predictions'
+import { StatusBadge } from './status-badge'
+import { ScoreFeedback } from './score-feedback'
+import { flag } from '@/lib/flags'
 
 type Match = {
   id: string
@@ -10,12 +13,16 @@ type Match = {
   match_date: string
   group_name: string
   status: string
+  local_score: number | null
+  away_score: number | null
 }
 
 type Prediction = {
   local_goals: number
   away_goals: number
 }
+
+const TWO_HOURS = 2 * 60 * 60 * 1000
 
 export function MatchCard({
   match,
@@ -53,7 +60,13 @@ export function MatchCard({
     }
   }, [saveStatus])
 
+  const isFinished = match.status === 'finalizado'
+  const matchTime = new Date(match.match_date).getTime()
+  const [now] = useState(() => Date.now())
+  const isLocked = isFinished || now >= matchTime - TWO_HOURS
+
   const debouncedSave = () => {
+    if (isLocked) return
     clearTimeout(timerRef.current)
     timerRef.current = setTimeout(async () => {
       const local = parseInt(localRef.current, 10)
@@ -71,11 +84,13 @@ export function MatchCard({
   }
 
   const handleLocalChange = (value: string) => {
+    if (isLocked) return
     setLocalGoals(value)
     debouncedSave()
   }
 
   const handleAwayChange = (value: string) => {
+    if (isLocked) return
     setAwayGoals(value)
     debouncedSave()
   }
@@ -86,53 +101,100 @@ export function MatchCard({
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
   })
 
+  const inputClasses =
+    'w-12 rounded-lg border px-2 py-1.5 text-center text-sm transition-all [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none' +
+    (isLocked
+      ? ' border-zinc-200 bg-zinc-100 text-zinc-400 cursor-not-allowed'
+      : ' border-zinc-300 bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20')
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3">
+    <div
+      className={`group relative flex items-center gap-3 rounded-lg border bg-white px-4 py-3 transition-all ${
+        isLocked
+          ? 'border-zinc-200 opacity-80'
+          : 'border-zinc-200 hover:border-zinc-300 hover:shadow-xs'
+      }`}
+    >
+      {isFinished && match.local_score !== null && match.away_score !== null && (
+        <div className="absolute -left-px top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-primary" />
+      )}
+
       <div className="min-w-0 flex-1 text-right">
         <span className="text-sm font-medium text-zinc-900">
-          {match.local_team}
+          {flag(match.local_team)} {match.local_team}
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="number"
-          min="0"
-          max="99"
-          value={localGoals}
-          onChange={(e) => handleLocalChange(e.target.value)}
-          className="w-12 rounded border border-zinc-300 px-2 py-1 text-center text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-        />
-        <span className="text-xs font-bold text-zinc-400">vs</span>
-        <input
-          type="number"
-          min="0"
-          max="99"
-          value={awayGoals}
-          onChange={(e) => handleAwayChange(e.target.value)}
-          className="w-12 rounded border border-zinc-300 px-2 py-1 text-center text-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
-        />
+      <div className="flex flex-col items-center gap-1">
+        {isFinished && match.local_score !== null && match.away_score !== null && (
+          <span className="text-xs font-semibold tabular-nums text-primary">
+            {match.local_score} – {match.away_score}
+          </span>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            max="99"
+            value={localGoals}
+            onChange={(e) => handleLocalChange(e.target.value)}
+            disabled={isLocked}
+            className={inputClasses}
+          />
+          <span className="text-xs font-bold text-zinc-300">vs</span>
+          <input
+            type="number"
+            min="0"
+            max="99"
+            value={awayGoals}
+            onChange={(e) => handleAwayChange(e.target.value)}
+            disabled={isLocked}
+            className={inputClasses}
+          />
+        </div>
       </div>
 
       <div className="min-w-0 flex-1">
         <span className="text-sm font-medium text-zinc-900">
-          {match.away_team}
+          {flag(match.away_team)} {match.away_team}
         </span>
       </div>
 
-      <div className="w-16 text-right">
-        {saveStatus === 'saving' && (
-          <span className="text-xs text-zinc-400">...</span>
-        )}
-        {saveStatus === 'saved' && (
-          <span className="text-xs text-green-600">✓ Guardado</span>
-        )}
-      </div>
-
-      <div className="hidden w-32 text-right text-xs text-zinc-400 sm:block">
-        {dateStr}
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center gap-2">
+          <StatusBadge status={match.status} locked={isLocked && !isFinished} />
+          {isFinished && (
+            <ScoreFeedback
+              matchLocalScore={match.local_score}
+              matchAwayScore={match.away_score}
+              predLocalGoals={prediction?.local_goals ?? null}
+              predAwayGoals={prediction?.away_goals ?? null}
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!isLocked && saveStatus === 'saving' && (
+            <span className="animate-fade-in text-xs text-zinc-400">
+              guardando…
+            </span>
+          )}
+          {!isLocked && saveStatus === 'saved' && (
+            <span className="animate-fade-in text-xs text-green-600">
+              ✓ guardado
+            </span>
+          )}
+          <span
+            className={`hidden text-xs sm:block ${
+              isLocked && !isFinished ? 'text-zinc-400' : 'text-zinc-400'
+            }`}
+          >
+            {isLocked && !isFinished && '🔒 '}
+            {dateStr}
+          </span>
+        </div>
       </div>
     </div>
   )

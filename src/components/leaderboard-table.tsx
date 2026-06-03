@@ -4,6 +4,13 @@ type LeaderboardEntry = {
   total_points: number
 }
 
+function MedalIcon({ rank }: { rank: number }) {
+  if (rank === 1) return <span className="text-lg">🥇</span>
+  if (rank === 2) return <span className="text-lg">🥈</span>
+  if (rank === 3) return <span className="text-lg">🥉</span>
+  return null
+}
+
 export function LeaderboardTable({
   entries,
   currentUserId,
@@ -14,6 +21,7 @@ export function LeaderboardTable({
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
+        <span className="mb-3 text-4xl">🏆</span>
         <p className="text-lg font-medium text-zinc-400">
           Todavía no hay puntajes
         </p>
@@ -24,23 +32,23 @@ export function LeaderboardTable({
     )
   }
 
-  const maxPoints = entries.length > 0 ? entries[0].total_points : 0
+  const maxPoints = entries[0].total_points
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-zinc-200 bg-zinc-100">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 w-12">
+          <tr className="border-b border-zinc-100 bg-zinc-50">
+            <th className="w-10 px-4 py-3 text-left text-xs font-semibold text-zinc-400">
               #
             </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400">
               Nombre
             </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold text-zinc-500 w-20">
+            <th className="w-16 px-4 py-3 text-right text-xs font-semibold text-zinc-400">
               Pts
             </th>
-            <th className="hidden sm:table-cell px-4 py-3 w-32" />
+            <th className="hidden px-4 py-3 sm:table-cell" />
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
@@ -54,41 +62,54 @@ export function LeaderboardTable({
             return (
               <tr
                 key={entry.user_id}
-                className={`${isCurrentUser ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                className={`transition-colors ${
+                  isCurrentUser
+                    ? 'bg-gradient-to-r from-primary/5 to-transparent'
+                    : 'hover:bg-zinc-50'
+                }`}
               >
-                <td
-                  className={`px-4 py-3 text-sm font-bold ${
-                    isCurrentUser ? 'text-white' : 'text-zinc-900'
-                  }`}
-                >
-                  {index + 1}
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    <MedalIcon rank={index + 1} />
+                    {!MedalIcon({ rank: index + 1 }) && (
+                      <span className="text-sm font-bold tabular-nums text-zinc-400">
+                        {index + 1}
+                      </span>
+                    )}
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-sm font-medium">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-sm font-medium ${
+                        isCurrentUser ? 'text-primary font-semibold' : 'text-zinc-900'
+                      }`}
+                    >
+                      {entry.nombre_completo}
+                    </span>
+                    {isCurrentUser && (
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        vos
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right">
                   <span
-                    className={
-                      isCurrentUser ? 'text-white' : 'text-zinc-900'
-                    }
+                    className={`text-sm font-bold tabular-nums ${
+                      isCurrentUser ? 'text-primary' : 'text-zinc-900'
+                    }`}
                   >
-                    {entry.nombre_completo}
+                    {entry.total_points}
                   </span>
-                  {isCurrentUser && (
-                    <span className="ml-2 text-xs text-zinc-400">(vos)</span>
-                  )}
                 </td>
-                <td
-                  className={`px-4 py-3 text-right text-sm font-bold tabular-nums ${
-                    isCurrentUser ? 'text-white' : 'text-zinc-900'
-                  }`}
-                >
-                  {entry.total_points}
-                </td>
-                <td className="hidden sm:table-cell px-4 py-3">
-                  <div className="h-2 w-full rounded-full bg-zinc-100">
+                <td className="hidden px-4 py-3 sm:table-cell">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
                     <div
-                      className={`h-2 rounded-full transition-all ${
+                      className={`h-full rounded-full transition-all duration-500 ${
                         isCurrentUser
-                          ? 'bg-white/70'
-                          : 'bg-zinc-900'
+                          ? 'bg-gradient-to-r from-primary to-primary-dark'
+                          : 'bg-zinc-300'
                       }`}
                       style={{ width: barWidth }}
                     />

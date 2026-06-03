@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { logout } from '@/app/actions/auth'
+import { DashboardHeader } from '@/components/dashboard-header'
 import { PredictionsList } from '@/components/predictions-list'
 
 type Match = {
@@ -20,7 +19,6 @@ export default async function DashboardPage() {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    console.error('Auth error:', authError?.message)
     redirect('/auth/login')
   }
 
@@ -53,50 +51,22 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-lg font-bold text-zinc-900">
-                Prode Mundial 2026
-              </h1>
-              <p className="text-xs text-zinc-500">
-                {profile?.nombre_completo || user.email}
-              </p>
-            </div>
-            <nav className="flex items-center gap-4">
-              <span className="text-xs font-semibold text-zinc-900">
-                Pronósticos
-              </span>
-              <Link
-                href="/dashboard/leaderboard"
-                className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
-              >
-                Tabla
-              </Link>
-              {process.env.ADMIN_EMAIL &&
-                user.email === process.env.ADMIN_EMAIL && (
-                  <Link
-                    href="/admin"
-                    className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
-                  >
-                    Admin
-                  </Link>
-                )}
-            </nav>
-          </div>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </div>
-      </header>
+      <DashboardHeader
+        userName={profile?.nombre_completo || user.email}
+        userEmail={user.email}
+        activeTab="pronosticos"
+      />
 
       <main className="mx-auto max-w-4xl px-4 py-6">
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <span className="mt-0.5 shrink-0">🗓️</span>
+          <span>
+            Tenés hasta <strong>2 horas antes</strong> de cada partido para hacer
+            o modificar tu pronóstico. Pasado ese plazo, el partido se cierra
+            automáticamente.
+          </span>
+        </div>
+
         <PredictionsList groups={groups} predictions={predictionsMap} />
       </main>
     </div>
