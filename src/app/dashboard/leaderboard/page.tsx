@@ -1,55 +1,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { LeaderboardTable } from '@/components/leaderboard-table'
 import { logout } from '@/app/actions/auth'
-import { PredictionsList } from '@/components/predictions-list'
 
-type Match = {
-  id: string
-  local_team: string
-  away_team: string
-  match_date: string
-  group_name: string
-  status: string
-  local_score: number | null
-  away_score: number | null
-}
-
-export default async function DashboardPage() {
+export default async function LeaderboardPage() {
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    console.error('Auth error:', authError?.message)
     redirect('/auth/login')
   }
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('nombre_completo')
     .eq('id', user.id)
     .single()
 
-  const { data: matches } = await supabase
-    .from('matches')
-    .select('*')
-    .order('match_date')
-
-  const { data: userPredictions } = await supabase
-    .from('predictions')
-    .select('*')
-    .eq('user_id', user.id)
-
-  const predictionsMap = new Map(
-    (userPredictions ?? []).map((p) => [p.match_id, p])
-  )
-
-  const groups: Record<string, Match[]> = {}
-  for (const match of matches ?? []) {
-    const g = match.group_name
-    if (!groups[g]) groups[g] = []
-    groups[g].push(match)
-  }
+  const { data: leaderboard } = await supabase.rpc('get_leaderboard')
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -65,15 +34,15 @@ export default async function DashboardPage() {
               </p>
             </div>
             <nav className="flex items-center gap-4">
-              <span className="text-xs font-semibold text-zinc-900">
-                Pronósticos
-              </span>
               <Link
-                href="/dashboard/leaderboard"
+                href="/dashboard"
                 className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
               >
-                Tabla
+                Pronósticos
               </Link>
+              <span className="text-xs font-semibold text-zinc-900">
+                Tabla
+              </span>
               {process.env.ADMIN_EMAIL &&
                 user.email === process.env.ADMIN_EMAIL && (
                   <Link
@@ -97,8 +66,20 @@ export default async function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-6">
-        <PredictionsList groups={groups} predictions={predictionsMap} />
+        <h2 className="mb-4 text-sm font-semibold text-zinc-900">
+          Tabla de posiciones
+        </h2>
+        <LeaderboardTable
+          entries={(leaderboard ?? []) as LeaderboardEntry[]}
+          currentUserId={user.id}
+        />
       </main>
     </div>
   )
+}
+
+type LeaderboardEntry = {
+  user_id: string
+  nombre_completo: string
+  total_points: number
 }
