@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { savePrediction } from '@/app/actions/predictions'
 import { StatusBadge } from './status-badge'
 import { ScoreFeedback } from './score-feedback'
-import { flag } from '@/lib/flags'
+import { flagUrl } from '@/lib/flags'
 
 type Match = {
   id: string
@@ -124,7 +124,10 @@ export function MatchCard({
 
       <div className="min-w-0 flex-1 text-right">
         <span className="text-sm font-medium text-zinc-900">
-          {flag(match.local_team)} {match.local_team}
+          {flagUrl(match.local_team) && (
+            <img src={flagUrl(match.local_team)} width="18" alt="" className="-mt-0.5 inline-block align-middle" />
+          )}{' '}
+          {match.local_team}
         </span>
       </div>
 
@@ -159,7 +162,10 @@ export function MatchCard({
 
       <div className="min-w-0 flex-1">
         <span className="text-sm font-medium text-zinc-900">
-          {flag(match.away_team)} {match.away_team}
+          {flagUrl(match.away_team) && (
+            <img src={flagUrl(match.away_team)} width="18" alt="" className="-mt-0.5 inline-block align-middle" />
+          )}{' '}
+          {match.away_team}
         </span>
       </div>
 
